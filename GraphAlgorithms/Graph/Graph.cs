@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 namespace GraphAlgorithms
 {
     public abstract class Graph<E> 
@@ -17,6 +18,7 @@ namespace GraphAlgorithms
         public Graph()
         {
             Nodes = new Dictionary<uint, Node<E>>();
+            Edges = new Dictionary<E, E>();
         }
 
         public bool AddNode(Node<E> node)
@@ -123,19 +125,65 @@ namespace GraphAlgorithms
         //najit vsechny nebo pouze jednu?
         //je treba udelat tridu EDGE.!!!!!!
         public Graph<E> FindAMinimalSpanningTree() {
-
+            List<E> edges = Edges.Keys.ToList().OrderBy(edge=>edge.Weight).ToList();
+            Graph<E> tree = new Graph<E>();
+            //Dictionary<uint,uint?> shrubs = new Dictionary<uint, uint?>();
+            List<int?> shrub = new List<uint?>(Nodes.Count);
+            Dictionary<int, int> heightOfShrub = new Dictionary<int, int>();
+            for (uint i = 0; i < edges.Count; i++){
+                
+            }
             return null;
         }
+        //Kruskal MST, Union find
+        protected int RootOf(int nodeKey, ref List<int?> shrub){
+            while(shrub[nodeKey].HasValue){
+                nodeKey = (int)shrub[nodeKey];
+            }
+            return nodeKey;
+        }
 
-        public Dictionary<E,uint?> FindDistanceBetweenAllNodes(){
-            Dictionary<E,uint?> matrix = new Dictionary<E,uint?>();
-                for(int k = 0; k < Nodes.Count; k++){
-                    for(int i = 1; i < Nodes.Count+1; i++){
-                        for(int j = 1; j< Nodes.Count+1; j++){
+        protected void Union(int nodeKey1, int nodeKey2, ref List<int?> shrub, ref Dictionary<int, int> heightOfShrub){
+            var root1 = RootOf(nodeKey1, ref shrub);
+            var root2 = RootOf(nodeKey2, ref shrub);
+            if (root1 == root2) return;
+            if(heightOfShrub[root1] < heightOfShrub[root2]){
+                shrub[root1] = root2;
+            }
+            else if(heightOfShrub[root1] > heightOfShrub[root2]){
+                shrub[root2] = root1;
+            }
+            else {
+                shrub[root1] = root2;
+                heightOfShrub[root2] = heightOfShrub[root2] >= 0 ? heightOfShrub[root2] + 1 : 1; //overit jestli funguje
+            }
 
-                        }
-                    }
-                }
+        }
+
+        protected bool Find(int nodeKey1, int nodeKey2, ref List<int?> shrub){
+            if (RootOf(nodeKey1, ref shrub) == RootOf(nodeKey2, ref shrub)){
+                return true;
+            }
+            return false;
+        }
+
+        protected uint?[,] FindShortestPathInMatrix(ref uint[,] matrixOfEdges){
+			for (int k = 0; k < Nodes.Count; k++){
+				for (int i = 1; i < Nodes.Count + 1; i++){
+					for (int j = 1; j < Nodes.Count + 1; j++){
+						matrixOfEdges[i, j] = Math.Min(matrixOfEdges[i, j], matrixOfEdges[i, k + 1] + matrixOfEdges[k + 1, j]);
+					}
+				}
+			}
+        }
+
+        protected uint?[,] FindShortestPathInMatrix(){
+			uint[,] matrix = new uint[Nodes.Count, Nodes.Count];
+			foreach(var edge in Edges.Values){
+                //TODO dodelat
+            }
+            FindShortestPathInMatrix(ref matrix);
+            return matrix;
         }
     }
     enum Status {

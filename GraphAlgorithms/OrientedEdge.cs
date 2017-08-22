@@ -7,6 +7,11 @@ namespace GraphAlgorithms
 		public Node<OrientedEdge> End { get; set; }
 		public uint Weight { get; set; }
 
+        public OrientedEdge(Node<OrientedEdge> start, Node<OrientedEdge> end, uint weight){
+            Start = start;
+            End = end;
+            Weight = weight;
+        }
 
 		public override int GetHashCode(){
             return (int)((((Start.Key + End.Key) * (Start.Key + End.Key + 1)) / 2) + End.Key);

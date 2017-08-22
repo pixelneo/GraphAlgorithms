@@ -25,6 +25,12 @@ namespace GraphAlgorithms
             return AddEdge(edge);
         }*/
 
+        /// <summary>
+        /// Finds the shortest path between two nodes
+        /// </summary>
+        /// <returns>Null if path does not exist, Tuple of the path and distance.</returns>
+        /// <param name="Start">Start node</param>
+        /// <param name="End">End node</param>
         public Tuple<UnorientedGraph,uint> FindShortestPath(Node<Edge> Start, Node<Edge> End) {
             var result = base.FindDistanceOfShortestPathAndPredecessors(Start, End);
             if (result == null)
@@ -48,6 +54,7 @@ namespace GraphAlgorithms
             return new Tuple<UnorientedGraph, uint>(graph, distance);
 
 		}
+
         public List<Edge> FindBridges(){
             List<Edge> bridges = new List<Edge>();
             uint count = 0;
