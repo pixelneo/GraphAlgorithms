@@ -3,10 +3,10 @@ using System.Collections.Generic;
 namespace GraphAlgorithms
 {
     public abstract class Graph<E> 
-        where E : GenericEdge
+        where E : IEdge<E>
     {
         //zmenit na hashset
-        public Dictionary<uint,Node<E,Graph<E>>> Nodes {
+        public Dictionary<uint,Node<E>> Nodes {
             get;
             private set;
         }
@@ -16,10 +16,10 @@ namespace GraphAlgorithms
         }
         public Graph()
         {
-            Nodes = new Dictionary<uint, Node<E,Graph<E>>>();
+            Nodes = new Dictionary<uint, Node<E>>();
         }
 
-        public bool AddNode(Node<E,Graph<E>> node)
+        public bool AddNode(Node<E> node)
         {
             if (Nodes.ContainsKey(node.Key))
                 return false;
@@ -28,16 +28,18 @@ namespace GraphAlgorithms
             return true;
         }
 
-        protected bool AddEdge(E edge){
-            if(!Edges.Contains(edge)){
-                if(Nodes.Contains(edge.from.Key))
-                    Nodes.Add(edge.from.Key,edge.from);
-                if(Nodes.Contains(edge.to.Key))
-                    Nodes.Add(edge.to.Key,edge.to);
-                return Edges.Add(edge);
+        protected bool AddEdgeAndEndNodes(E edge){
+            if(!Edges.ContainsKey(edge)){
+                if(Nodes.ContainsKey(edge.Start.Key))
+                    Nodes.Add(edge.Start.Key,edge.Start);
+                if(Nodes.ContainsKey(edge.End.Key))
+                    Nodes.Add(edge.End.Key,edge.End);
+                Edges.Add(edge, edge);
+                return true;
             }
             return false;
         }
+
 
 
         //pro neorientovane, pro orientovane zmenit rekonstrukci cesty
@@ -46,23 +48,21 @@ namespace GraphAlgorithms
         /// <summary>
         /// Finds the shortest path between two nodes.
         /// </summary>
-        /// <returns>Tuple of Graph, representing path and and the distance.</returns>
-        /// <param name="from">Start node</param>
+        /// <returns>Tuple of distance and dictionary of predecessors</returns>
+        /// <param name="start">Start node</param>
         /// <param name="to">End node</param>
-        protected Tuple<Graph<E>,uint> FindShortestPath(Node<E,Graph<E>> start, Node<E, Graph<E>> to) {
+        protected Tuple<uint, Dictionary<uint, uint?>> FindDistanceOfShortestPathAndPredecessors(Node<E> start, Node<E> to) {
             //TODO: minimova halda 
-            Dictionary<uint, uint> distance = new Dictionary<uint, uint>();
+            Dictionary<uint, uint?> distance = new Dictionary<uint, uint>();
             Dictionary<uint, Status> status = new Dictionary<uint, Status>();
             Dictionary<uint, uint?> predecessor = new Dictionary<uint, uint?>();
 
-            foreach(KeyValuePair<uint, Node<E,Graph<E>>> node in Nodes){
+            foreach(KeyValuePair<uint, Node<E>> node in Nodes){
                 status[node.Key] = Status.UnDiscovered;
                 distance[node.Key] = uint.MaxValue;
                 predecessor[node.Key] = null; //asi nepujde, co kdyby to byl int; mozna je jedno co tam bude
             }
-            Node<E, Graph<E>> current = new Node<E, Graph<E>>(start.Key, start.Value);
-			uint currentKey = start.Key;
-            uint currentValue = 0;
+            Node<E> current = new Node<E>(start.Key, start.Value);
             status[start.Key] = Status.Open;
             distance[start.Key] = 0;
             uint otevrene = 1;
@@ -75,24 +75,17 @@ namespace GraphAlgorithms
                 }
 
                 //s verzi s Edge - budu resit vrchol na konci incidentni hrany. vsechno ulozeno stejne
-                foreach(var edge in current.IncidentEdges.Keys){
-                    var neighbouringNode = edge.getNeighbour(current).Key;
-                    if(distance[neighbouringNode] > distance[current.Key] + entry.weight){
-                         otevrene[neighbouringNode] = distance[current.Key] + entry.weight;
-                        status[neighbouringNode] = Status.Open;
-                         otevrene++;
-                         predecessor[neighbouringNode] = current.Key;
+                foreach(var edge in current.IncidentEdges.Values){
+                    Node<E> neighbouringNode = edge.GetNeighbour(current);
+                    uint key = neighbouringNode.Key;
+                    if(distance[key] > distance[current.Key] + edge.Weight){
+                        distance[key] = distance[current.Key] + edge.Weight;
+                        status[key] = Status.Open;
+                        predecessor[key] = current.Key;
+                        otevrene++;
                     }
                 }
-                /* 
-                foreach(var entry in current.Neighbours.Values){
-                    if(distance[entry.Item1] > distance[current.Key] + entry.Item2){
-                         otevrene[entry.Item1] = distance[current.Key] + entry.Item2;
-                         status[entry.Item1] = .Open;
-                         otevrene++;
-                         predecessor[entry.Item1] = current.Key;
-                    }
-                }*/
+
                 status[current.Key] = Status.Closed;
                 otevrene--;
                 if(current.Key == to.Key)
@@ -101,11 +94,16 @@ namespace GraphAlgorithms
                 current.Value = int.MaxValue;
 
             }
+            if (distance[to.Key] != int.MaxValue)
+                return new Tuple<uint, Dictionary<uint, uint?>>((uint)distance[to.Key], predecessor);
+            else
+                return null;
+
             //neni treba preimplementovat, 
             if(distance[to.Key] < uint.MaxValue)
             {
                 object result = Activator.CreateInstance(GetType());
-                Node<E,Graph<E>> previous = new Node<E,Graph<E>>(to.Key, to.Value);
+                Node<E> previous = new Node<E>(to.Key, to.Value);
                 result.AddNode(previous);
                 while(!current.Equals(from)){
                     current = new Node<E,Graph<E>>(predecessor[previous.Key], Nodes[previous.Key].Value);

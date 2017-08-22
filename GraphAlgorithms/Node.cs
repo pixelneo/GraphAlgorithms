@@ -3,18 +3,14 @@ using System.Collections.Generic;
 
 namespace GraphAlgorithms
 {
-    public class Node<E, G> : IEquatable<Node<E,G>>
-        where E : GenericEdge //rozliseni orientovanych a neorientovanych hran
-        where G : Graph<E> //aby nesli pridat incidentni hrany, jejichz koncove vrcholy nejsou v grafu
-    {
+    public class Node<E> : IEquatable<Node<E>>
+	    where E : IEdge<E> //rozliseni orientovanych a neorientovanych hran
+
+	{
         public uint Key;
         public Object Value = null;
 
         public Dictionary<E,E> IncidentEdges {
-            get;
-            private set;
-        }        
-        public Dictionary<uint, Edge> Neighbours {
             get;
             private set;
         }
@@ -37,23 +33,23 @@ namespace GraphAlgorithms
         }
 
         //smazat
-        public bool AddNeighbour(Node neighbour, uint distance)
-        {
-            if (Neighbours.ContainsKey(neighbour.Key))
-                return false;
-                var edge = Edge;
-                edge.Start = neighbour.Key;
-                edge.End = 
-            Neighbours.Add(neighbour.Key,new Tuple<Node, uint>(neighbour, distance));
-            return true;
-        }
+        //public bool AddNeighbour(Node<E> neighbour, uint distance)
+        //{
+        //    if (Neighbours.ContainsKey(neighbour.Key))
+        //        return false;
+        //    E edge = new E();
+        //    edge.Start = this;
+        //    edge.End = neighbour;
+        //    Neighbours.Add(neighbour.Key,new Tuple<Node<E>, uint>(neighbour, distance));
+        //    return true;
+        //}
 
-        public bool DeleteNeighbour(uint key){
-            return Neighbours.Remove(key);
-        }
+        //public bool DeleteNeighbour(uint key){
+        //    return Neighbours.Remove(key);
+        //}
         //smazat END
         
-        public override bool Equals(Node<E,G> other)
+        public bool Equals(Node<E> other)
         {
             return this.Key.Equals(other.Key); 
         }

@@ -39,8 +39,8 @@
     <Compile Include="Graph\Graph.cs" />
     <Compile Include="Graph\OrientedGraph.cs" />
     <Compile Include="Graph\UnorientedGraph.cs" />
-    <Compile Include="GenericEdge.cs" />
     <Compile Include="OrientedEdge.cs" />
+    <Compile Include="IEdge.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Graph\" />

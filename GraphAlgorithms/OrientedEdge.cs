@@ -1,13 +1,19 @@
 using System;
 namespace GraphAlgorithms
 {
-    public class OrientedEdge : GenericEdge
+    public class OrientedEdge : IEdge<OrientedEdge>
     {
-        public override Node<OrientedEdge,OrientedGraph> GetNeighbour(Node<OrientedEdge, OrientedGraph> me){
-            return End;
+		public Node<OrientedEdge> Start { get; set; }
+		public Node<OrientedEdge> End { get; set; }
+		public uint Weight { get; set; }
+
+
+		public override int GetHashCode(){
+            return (int)((((Start.Key + End.Key) * (Start.Key + End.Key + 1)) / 2) + End.Key);
         }
-        public override int GetHashCode(){
-            return (((Start.Key+End.Key)*(Start.Key+End.Key+1))/2)+End.Key;
+		
+        public Node<OrientedEdge> GetNeighbour(Node<OrientedEdge> me){
+            return End;
         }
     }
 }
