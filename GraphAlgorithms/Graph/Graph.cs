@@ -3,43 +3,64 @@ using System.Collections.Generic;
 using System.Linq;
 namespace GraphAlgorithms
 {
-    public abstract class Graph<E> 
+    public abstract class Graph<E>
         where E : IEdge<E>
     {
-        //zmenit na hashset
-        public Dictionary<uint,Node<E>> Nodes {
+        protected List<E> edges;
+        protected List<int?> shrub;
+        protected List<int> heightOfShrub;
+		protected List<bool> visited;
+		protected List<int?> low;
+		protected List<int?> in1;
+		protected List<int> out1;
+		protected int countDFS; // helper field for counting edges in DFS
+
+
+
+		public Dictionary<int, Node<E>> Nodes
+        {
             get;
             private set;
         }
-        public Dictionary<E,E> Edges {
+        public Dictionary<E, E> Edges
+        {
             get;
             private set;
         }
+		protected Node<OrientedEdge> rootNode
+		{
+			get;
+			set;
+		}
+
         public Graph()
         {
-            Nodes = new Dictionary<uint, Node<E>>();
+            Nodes = new Dictionary<int, Node<E>>();
             Edges = new Dictionary<E, E>();
+            rootNode = new Node<OrientedEdge>(0);
         }
 
-        public bool AddNode(Node<E> node)
+        public virtual bool AddNode(Node<E> node)
         {
             if (Nodes.ContainsKey(node.Key))
                 return false;
             Nodes.Add(node.Key, node);
-            //this
             return true;
         }
 
         protected bool AddEdgeAndEndNodes(E edge){
             if(!Edges.ContainsKey(edge)){
-                if(Nodes.ContainsKey(edge.Start.Key))
-                    Nodes.Add(edge.Start.Key,edge.Start);
-                if(Nodes.ContainsKey(edge.End.Key))
-                    Nodes.Add(edge.End.Key,edge.End);
+                AddNode(edge.Start);
+                AddNode(edge.End);
                 Edges.Add(edge, edge);
                 return true;
             }
             return false;
+        }
+
+        //TODO smazat i referenci v IndidentEdges
+        public virtual bool DeleteEdge(E edge){
+            return Edges.Remove(edge);
         }
 
 
@@ -53,24 +74,24 @@ namespace GraphAlgorithms
         /// <returns>Tuple of distance and dictionary of predecessors</returns>
         /// <param name="start">Start node</param>
         /// <param name="to">End node</param>
-        protected Tuple<uint, Dictionary<uint, uint?>> FindDistanceOfShortestPathAndPredecessors(Node<E> start, Node<E> to) {
+        protected Tuple<int, Dictionary<int, int?>> FindDistanceOfShortestPathAndPredecessors(Node<E> start, Node<E> to) {
             //TODO: minimova halda 
-            Dictionary<uint, uint?> distance = new Dictionary<uint, uint>();
-            Dictionary<uint, Status> status = new Dictionary<uint, Status>();
-            Dictionary<uint, uint?> predecessor = new Dictionary<uint, uint?>();
+            var distance = new Dictionary<int, int>();
+            var status = new Dictionary<int, Status>();
+            var predecessor = new Dictionary<int, int?>();
 
-            foreach(KeyValuePair<uint, Node<E>> node in Nodes){
+            foreach(var node in Nodes){
                 status[node.Key] = Status.UnDiscovered;
-                distance[node.Key] = uint.MaxValue;
+                distance[node.Key] = int.MaxValue;
                 predecessor[node.Key] = null; //asi nepujde, co kdyby to byl int; mozna je jedno co tam bude
             }
-            Node<E> current = new Node<E>(start.Key, start.Value);
+            var current = new Node<E>(start.Key, start.Value);
             status[start.Key] = Status.Open;
             distance[start.Key] = 0;
             uint otevrene = 1;
             while(otevrene > 0){
 
-                foreach(KeyValuePair<uint, Status> node in status){
+                foreach(var node in status){
                     if(node.Value == Status.Open && distance[node.Key] < distance[current.Key]){
                         current = Nodes[node.Key];
                     }
@@ -78,8 +99,8 @@ namespace GraphAlgorithms
 
                 //s verzi s Edge - budu resit vrchol na konci incidentni hrany. vsechno ulozeno stejne
                 foreach(var edge in current.IncidentEdges.Values){
-                    Node<E> neighbouringNode = edge.GetNeighbour(current);
-                    uint key = neighbouringNode.Key;
+                    var neighbouringNode = edge.GetNeighbour(current);
+                    var key = neighbouringNode.Key;
                     if(distance[key] > distance[current.Key] + edge.Weight){
                         distance[key] = distance[current.Key] + edge.Weight;
                         status[key] = Status.Open;
@@ -97,55 +118,37 @@ namespace GraphAlgorithms
 
             }
             if (distance[to.Key] != int.MaxValue)
-                return new Tuple<uint, Dictionary<uint, uint?>>((uint)distance[to.Key], predecessor);
-            else
-                return null;
+                return new Tuple<int, Dictionary<int, int?>>((int)distance[to.Key], predecessor);
+            return null;
 
-            //neni treba preimplementovat, 
-            if(distance[to.Key] < uint.MaxValue)
-            {
-                object result = Activator.CreateInstance(GetType());
-                Node<E> previous = new Node<E>(to.Key, to.Value);
-                result.AddNode(previous);
-                while(!current.Equals(from)){
-                    current = new Node<E,Graph<E>>(predecessor[previous.Key], Nodes[previous.Key].Value);
-                   // current.AddNeighbour(previous);
-                   
-                    result.AddNode(current);
-                    result.AddEdge();
-                    result.Nodes[previous.Key].AddNeighbour(current);
-                    previous = current;
-                }
-                return new Tuple<Graph<E>,uint>(result, distance[to]);
-            }
-            else
-                return null; // jde to ?
         }
 
-        //najit vsechny nebo pouze jednu?
-        //je treba udelat tridu EDGE.!!!!!!
-        public Graph<E> FindAMinimalSpanningTree() {
-            List<E> edges = Edges.Keys.ToList().OrderBy(edge=>edge.Weight).ToList();
-            Graph<E> tree = new Graph<E>();
-            //Dictionary<uint,uint?> shrubs = new Dictionary<uint, uint?>();
-            List<int?> shrub = new List<uint?>(Nodes.Count);
-            Dictionary<int, int> heightOfShrub = new Dictionary<int, int>();
-            for (uint i = 0; i < edges.Count; i++){
-                
+
+        protected bool FindAMinimalSpanningTreeShrub(ref Graph<E> graph) {
+            edges = Edges.Keys.ToList().OrderBy(edge=>edge.Weight).ToList();
+            shrub = new List<int?>(Nodes.Count);
+            heightOfShrub = new List<int>(Nodes.Count);
+
+            foreach(var edge in edges){
+                if(!Find(edge.Start.Key, edge.End.Key)){
+                    Union(edge.Start.Key, edge.End.Key);
+                    //tady pridani hrany, a overeni ze existuje
+                }
             }
-            return null;
+
+            return true;
         }
         //Kruskal MST, Union find
-        protected int RootOf(int nodeKey, ref List<int?> shrub){
+        private int RootOf(int nodeKey){
             while(shrub[nodeKey].HasValue){
                 nodeKey = (int)shrub[nodeKey];
             }
             return nodeKey;
         }
 
-        protected void Union(int nodeKey1, int nodeKey2, ref List<int?> shrub, ref Dictionary<int, int> heightOfShrub){
-            var root1 = RootOf(nodeKey1, ref shrub);
-            var root2 = RootOf(nodeKey2, ref shrub);
+        protected void Union(int nodeKey1, int nodeKey2){
+            var root1 = RootOf(nodeKey1);
+            var root2 = RootOf(nodeKey2);
             if (root1 == root2) return;
             if(heightOfShrub[root1] < heightOfShrub[root2]){
                 shrub[root1] = root2;
@@ -155,36 +158,19 @@ namespace GraphAlgorithms
             }
             else {
                 shrub[root1] = root2;
-                heightOfShrub[root2] = heightOfShrub[root2] >= 0 ? heightOfShrub[root2] + 1 : 1; //overit jestli funguje
+                heightOfShrub[root2] = heightOfShrub[root2] + 1; 
             }
 
         }
 
-        protected bool Find(int nodeKey1, int nodeKey2, ref List<int?> shrub){
-            if (RootOf(nodeKey1, ref shrub) == RootOf(nodeKey2, ref shrub)){
+        protected bool Find(int nodeKey1, int nodeKey2){
+            if (RootOf(nodeKey1) == RootOf(nodeKey2)){
                 return true;
             }
             return false;
         }
 
-        protected uint?[,] FindShortestPathInMatrix(ref uint[,] matrixOfEdges){
-			for (int k = 0; k < Nodes.Count; k++){
-				for (int i = 1; i < Nodes.Count + 1; i++){
-					for (int j = 1; j < Nodes.Count + 1; j++){
-						matrixOfEdges[i, j] = Math.Min(matrixOfEdges[i, j], matrixOfEdges[i, k + 1] + matrixOfEdges[k + 1, j]);
-					}
-				}
-			}
-        }
-
-        protected uint?[,] FindShortestPathInMatrix(){
-			uint[,] matrix = new uint[Nodes.Count, Nodes.Count];
-			foreach(var edge in Edges.Values){
-                //TODO dodelat
-            }
-            FindShortestPathInMatrix(ref matrix);
-            return matrix;
-        }
+        
     }
     enum Status {
         Open, 

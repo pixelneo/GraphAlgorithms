@@ -6,7 +6,7 @@ namespace GraphAlgorithms
     {
 		Node<E> Start { get; set; }
 		Node<E> End { get; set; }
-		uint Weight { get; set; }
+		int Weight { get; set; }
 
         Node<E> GetNeighbour(Node<E> me);
     }

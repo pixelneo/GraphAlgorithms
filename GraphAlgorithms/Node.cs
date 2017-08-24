@@ -7,7 +7,17 @@ namespace GraphAlgorithms
 	    where E : IEdge<E> //rozliseni orientovanych a neorientovanych hran
 
 	{
-        public uint Key;
+        private int key;
+        public int Key{
+            get{
+                return key;
+            }
+            set{
+                if(value >= 0){
+                    key = value;
+                }
+            }
+        }
         public Object Value = null;
 
         public Dictionary<E,E> IncidentEdges {
@@ -15,7 +25,7 @@ namespace GraphAlgorithms
             private set;
         }
 
-        public Node(uint key, Object value = null)
+        public Node(int key, Object value = null)
         {
             //Neighbours = new Dictionary<uint, Edge>>();
             Value = value;
