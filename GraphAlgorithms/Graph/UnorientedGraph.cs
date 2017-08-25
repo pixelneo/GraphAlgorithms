@@ -42,13 +42,11 @@ namespace GraphAlgorithms
 
             UnorientedGraph graph = new UnorientedGraph();
 			Node<Edge> previous = new Node<Edge>(End.Key, End.Value);
-			graph.AddNode(previous);
             var current = End;
             while (!current.Equals(Start) && predecessor[previous.Key].HasValue)
 			{
 				current = new Node<Edge>((int)predecessor[previous.Key], Nodes[previous.Key].Value);
 
-				graph.AddNode(current);
                 Edge edge = new Edge(previous, current, 1);
                 graph.AddEdge(Edges[edge]);
 				previous = current;
@@ -59,8 +57,13 @@ namespace GraphAlgorithms
 
         public UnorientedGraph FindMST(){
 			edges = Edges.Keys.ToList().OrderBy(edge => edge.Weight).ToList();
-            shrub = new List<int?>(new int?[Nodes.Count]);
-			heightOfShrub = new List<int>(new int[Nodes.Count]);
+            shrub = new Dictionary<int, int?>(Nodes.Count);
+			heightOfShrub = new Dictionary<int, int>(Nodes.Count);
+
+			foreach(var node in Nodes){
+				shrub.Add(node.Key, null);
+                heightOfShrub.Add(node.Key, 0);
+			}
 
             UnorientedGraph graph = new UnorientedGraph();
 
@@ -74,7 +77,7 @@ namespace GraphAlgorithms
                     edgeCount++;
 				}
 			}
-            if (edgeCount + 1 < Nodes.Count)
+            if (edgeCount + 1 != Nodes.Count)
                 return null;
             return graph;
 		}
@@ -82,16 +85,25 @@ namespace GraphAlgorithms
 	
 
         public IEnumerable<Edge> FindBridges(){
-            List<Edge> bridges = new List<Edge>();
+           // var bridges = new List<Edge>();
             countBridges = 0;
-            in1 = new List<int?>(new int?[Nodes.Count]);
-            low = new List<int?>();
-
+            in1 = new Dictionary<int, int?>(Nodes.Count);
+            low = new Dictionary<int, int?>(Nodes.Count);
+			foreach (var n in Nodes)
+			{
+				in1.Add(n.Key, null);
+				low.Add(n.Key, null);
+			}
             var node = Nodes.First();
-            return bridgesDFS(node.Key);
+			
+
+
+			foreach(var edge in bridgesDFS(node.Key)){
+                yield return edge;
+            }
         }
 
-        private IEnumerable<Edge> bridgesDFS(int nodeKey, int? nodeParent = null){
+        private IEnumerable<Edge> bridgesDFS(int nodeKey, int? nodeParent = null){          
             countDFS++;
             in1[nodeKey] = countDFS;
             low[nodeKey] = int.MaxValue;
@@ -100,6 +112,7 @@ namespace GraphAlgorithms
                 if(in1[w] == null){
                     bridgesDFS(w, nodeKey);
                     if(low[w] >= in1[w]){
+                        yield return Edges.First().Value;
                         yield return edge;
                     }
                     low[nodeKey] = Math.Min(low[w].Value,low[nodeKey].Value);
@@ -120,28 +133,30 @@ namespace GraphAlgorithms
         /// <returns>List of instances of UnorientedGraph repsesenting list of conected components.</returns>
         public IEnumerable<UnorientedGraph> FindConnectedComponents()
 		{
-            visited = new List<bool>(new bool[Nodes.Count]);
-            List<UnorientedGraph> components = new List<UnorientedGraph>();
-            Queue<int> nodeKeys = new Queue<int>();
+            visited = new Dictionary<int, bool>(Nodes.Count);
+            foreach(var n in Nodes){
+                visited.Add(n.Key, false);
+            }
+            var nodeKeys = new Queue<int>();
+            var graph = new UnorientedGraph();
             foreach(var node in Nodes.Values){
                 if (visited[node.Key])
                     continue;
-                components.Add(new UnorientedGraph());
                 nodeKeys.Enqueue(node.Key);
                 visited[node.Key] = true;
                 //BFS, which finds all reachable nodes
                 while(nodeKeys.Count > 0){ 
                     var nodeKey = nodeKeys.Dequeue();
                     foreach(var nodeNeighbourEdge in Nodes[nodeKey].IncidentEdges.Values){
-                        components.Last().AddEdge(nodeNeighbourEdge);
+                        graph.AddEdge(nodeNeighbourEdge);
                         if(!visited[nodeNeighbourEdge.GetNeighbourKey(nodeKey)])
                             nodeKeys.Enqueue(nodeNeighbourEdge.GetNeighbourKey(nodeKey));
                         visited[nodeNeighbourEdge.GetNeighbourKey(nodeKey)] = true;
 
 					}
                 }
+                yield return graph;
             }
-            return components;
 		}
 
         /// <summary>
@@ -150,8 +165,12 @@ namespace GraphAlgorithms
         /// <returns><c>true</c>, if connected is connected, <c>false</c> otherwise.</returns>
 		public bool IsConnected()
 		{
-			visited = new List<bool>(new bool[Nodes.Count]);
-			countDFS = 0;
+            visited = new Dictionary<int, bool>(Nodes.Count);
+			foreach (var n in Nodes)
+			{
+				visited.Add(n.Key, false);
+			}			
+            countDFS = 0;
             IsConnectedDFS(Nodes.First().Key);
             if (countDFS < Nodes.Count)
                 return false;

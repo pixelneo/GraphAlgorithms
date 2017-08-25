@@ -41,17 +41,16 @@ namespace GraphAlgorithms
 			var predecessor = result.Item2;
 
             OrientedGraph graph = new OrientedGraph();
-            Node<OrientedEdge> previous = new Node<OrientedEdge>(End.Key, End.Value);
-			graph.AddNode(previous);
 			var current = End;
-			while (!current.Equals(Start) && predecessor[previous.Key].HasValue)
-			{
-                current = new Node<OrientedEdge>((int)predecessor[previous.Key], Nodes[previous.Key].Value);
+            Node<OrientedEdge> previous;
 
-				graph.AddNode(current);
+            while (!current.Equals(Start) && predecessor[current.Key].HasValue)
+			{
+                previous = Nodes[(int)predecessor[current.Key]];
+
                 OrientedEdge edge = new OrientedEdge(previous, current, 1);
 				graph.AddEdge(Edges[edge]);
-				previous = current;
+                current = previous;
 			}
             return new Tuple<OrientedGraph, int>(graph, distance);
 
@@ -60,8 +59,14 @@ namespace GraphAlgorithms
         public OrientedGraph FindMST()
 		{
             edges = Edges.Keys.ToList().OrderBy(edge => edge.Weight).ToList();
-			shrub = new List<int?>(new int?[Nodes.Count]);
-			heightOfShrub = new List<int>(new int[Nodes.Count]);
+			shrub = new Dictionary<int, int?>(Nodes.Count);
+			heightOfShrub = new Dictionary<int, int>(Nodes.Count);
+
+			foreach (var node in Nodes)
+			{
+				shrub.Add(node.Key, null);
+				heightOfShrub.Add(node.Key, 0);
+			}
 			OrientedGraph graph = new OrientedGraph();
 			
 			int edgeCount = 0;
@@ -74,14 +79,15 @@ namespace GraphAlgorithms
 					edgeCount++;
 				}
 			}
-			if (edgeCount + 1 < Nodes.Count)
+			if (edgeCount + 1 != Nodes.Count)
 				return null;
 			return graph;
 		}
 		
 		public List<Node<OrientedEdge>> FindTopologicalOrder(){
-            out1 = new List<int>();
-            in1 = new List<int?>();
+            out1 = new Dictionary<int, int>();
+            in1 = new Dictionary<int, int?>();
+            countDFS = 0;
             DFS(rootNode.Key);
             var result = new List<Node<OrientedEdge>>();
             for (int i = Nodes.Count; i > 0; i++){
@@ -94,13 +100,21 @@ namespace GraphAlgorithms
         }
 
         public bool IsDAG(){
-			visited = new List<bool>(new bool[Nodes.Count]);
+            visited = new Dictionary<int, bool>(Nodes.Count);
+			foreach (var node in Nodes)
+			{
+                visited.Add(node.Key, false);
+			}
             return DagDfs(rootNode.Key);
         }
 
         //TODO tohle jsou slabe spojene komponenty, predelat na to!
         public IEnumerable<UnorientedGraph> FindWeaklyConnectedComponents(){
-			visited = new List<bool>(new bool[Nodes.Count]);
+            visited = new Dictionary<int, bool>(Nodes.Count);
+			foreach (var node in Nodes)
+			{
+				visited.Add(node.Key, false);
+			}
             var components = new List<OrientedGraph>();
 			var nodeKeys = new Queue<int>();
             var temporaryGraph = new UnorientedGraph();
@@ -119,12 +133,12 @@ namespace GraphAlgorithms
 			if (visited[nodeKey])
 				return;
 			visited[nodeKey] = true;
-            in1.Add(nodeKey);
+            in1.Add(nodeKey, countDFS++);
 			foreach (var neighbour in Nodes[nodeKey].IncidentEdges.Values)
 			{
 				DFS(neighbour.End.Key);
 			}
-			out1.Add(nodeKey);
+            out1.Add(nodeKey,countDFS++);
         }
 
         private bool DagDfs(int nodeKey){

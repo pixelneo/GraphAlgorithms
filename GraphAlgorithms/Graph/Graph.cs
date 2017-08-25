@@ -7,12 +7,12 @@ namespace GraphAlgorithms
         where E : IEdge<E>
     {
         protected List<E> edges;
-        protected List<int?> shrub;
-        protected List<int> heightOfShrub;
-		protected List<bool> visited;
-		protected List<int?> low;
-		protected List<int?> in1;
-		protected List<int> out1;
+        protected Dictionary<int,int?> shrub;
+        protected Dictionary<int,int> heightOfShrub;
+        protected Dictionary<int,bool> visited;
+		protected Dictionary<int, int?> low;
+		protected Dictionary<int, int?> in1;
+		protected Dictionary<int, int> out1;
 		protected int countDFS; // helper field for counting edges in DFS
 
 
@@ -85,15 +85,17 @@ namespace GraphAlgorithms
                 distance[node.Key] = int.MaxValue;
                 predecessor[node.Key] = null; //asi nepujde, co kdyby to byl int; mozna je jedno co tam bude
             }
-            var current = new Node<E>(start.Key, start.Value);
+            var current = new Node<E>(start);
             status[start.Key] = Status.Open;
             distance[start.Key] = 0;
+            var newOpen = true;
             uint otevrene = 1;
             while(otevrene > 0){
 
                 foreach(var node in status){
-                    if(node.Value == Status.Open && distance[node.Key] < distance[current.Key]){
+                    if(node.Value == Status.Open && (distance[node.Key] < distance[current.Key] || !newOpen )){
                         current = Nodes[node.Key];
+                        newOpen = true;
                     }
                 }
 
@@ -113,8 +115,8 @@ namespace GraphAlgorithms
                 otevrene--;
                 if(current.Key == to.Key)
                     break;
-
-                current.Value = int.MaxValue;
+                newOpen = false;
+               // current.Value = int.MaxValue;
 
             }
             if (distance[to.Key] != int.MaxValue)
@@ -126,9 +128,13 @@ namespace GraphAlgorithms
 
         protected bool FindAMinimalSpanningTreeShrub(ref Graph<E> graph) {
             edges = Edges.Keys.ToList().OrderBy(edge=>edge.Weight).ToList();
-            shrub = new List<int?>(Nodes.Count);
-            heightOfShrub = new List<int>(Nodes.Count);
-
+            shrub = new Dictionary<int, int?>(Nodes.Count);  //new List<int?>(Nodes.Count);
+            heightOfShrub = new Dictionary<int, int>(Nodes.Count);
+			foreach (var n in Nodes)
+			{
+                shrub.Add(n.Key, null);
+				heightOfShrub.Add(n.Key, 0);
+			}
             foreach(var edge in edges){
                 if(!Find(edge.Start.Key, edge.End.Key)){
                     Union(edge.Start.Key, edge.End.Key);
@@ -168,6 +174,10 @@ namespace GraphAlgorithms
                 return true;
             }
             return false;
+        }
+        public override string ToString()
+        {
+            return string.Format("[Graph: Nodes={0}, Edges={1}]", Nodes, Edges);
         }
 
         

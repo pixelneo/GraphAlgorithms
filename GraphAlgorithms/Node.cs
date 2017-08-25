@@ -25,11 +25,16 @@ namespace GraphAlgorithms
             private set;
         }
 
-        public Node(int key, Object value = null)
+        public Node(int key, Object value = null, Dictionary<E,E> incidentEdges = null)
         {
-            //Neighbours = new Dictionary<uint, Edge>>();
+            IncidentEdges = incidentEdges ?? new Dictionary<E, E>();
             Value = value;
             Key = key;
+        }
+        public Node(Node<E> node){
+            IncidentEdges = node.IncidentEdges;
+            Key = node.Key;
+            Value = node.Value;
         }
 
         public bool AddIncidentEdge(E edge){
@@ -66,6 +71,10 @@ namespace GraphAlgorithms
 
         public override int GetHashCode(){
             return this.Key.GetHashCode();
+        }
+        public override string ToString()
+        {
+            return string.Format("[Node: Key={0}]", Key);
         }
     }
 }

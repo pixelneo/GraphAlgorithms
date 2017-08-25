@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphAlgorithms", "GraphAlgorithms\GraphAlgorithms.csproj", "{23A34946-8D7B-4D43-B917-9F12609449E6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphTests", "GraphTests\GraphTests.csproj", "{BEF67109-0F6F-40E8-9F68-5774EDA519DE}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -15,9 +13,5 @@ Global
 		{23A34946-8D7B-4D43-B917-9F12609449E6}.Debug|x86.Build.0 = Debug|x86
 		{23A34946-8D7B-4D43-B917-9F12609449E6}.Release|x86.ActiveCfg = Release|x86
 		{23A34946-8D7B-4D43-B917-9F12609449E6}.Release|x86.Build.0 = Release|x86
-		{BEF67109-0F6F-40E8-9F68-5774EDA519DE}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{BEF67109-0F6F-40E8-9F68-5774EDA519DE}.Debug|x86.Build.0 = Debug|Any CPU
-		{BEF67109-0F6F-40E8-9F68-5774EDA519DE}.Release|x86.ActiveCfg = Release|Any CPU
-		{BEF67109-0F6F-40E8-9F68-5774EDA519DE}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

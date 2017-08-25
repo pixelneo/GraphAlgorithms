@@ -47,9 +47,7 @@ namespace GraphAlgorithms
 
         public bool Equals(Edge other)
         {
-            if((this.Start.Equals(other.Start) && this.End.Equals(other.End)) || (this.Start.Equals(other.End) && this.End.Equals(other.Start)))
-                return true;
-            return false;
+            return (this.Start.Equals(other.Start) && this.End.Equals(other.End)) || (this.Start.Equals(other.End) && this.End.Equals(other.Start));
         }
 
         public override int GetHashCode(){
@@ -60,6 +58,10 @@ namespace GraphAlgorithms
                 return (int)((((End.Key + Start.Key) * (End.Key + Start.Key + 1)) / 2) + Start.Key);
             }
             
+        }
+        public override string ToString()
+        {
+            return string.Format("[Edge: Start={0}, End={1}, Weight={2}]", Start, End, Weight);
         }
     }
 }
