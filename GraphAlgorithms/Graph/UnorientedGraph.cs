@@ -81,29 +81,20 @@ namespace GraphAlgorithms
                 return null;
             return graph;
 		}
-
-	
-
         public IEnumerable<Edge> FindBridges(){
-           // var bridges = new List<Edge>();
-            countBridges = 0;
-            in1 = new Dictionary<int, int?>(Nodes.Count);
-            low = new Dictionary<int, int?>(Nodes.Count);
-			foreach (var n in Nodes)
-			{
-				in1.Add(n.Key, null);
-				low.Add(n.Key, null);
-			}
-            var node = Nodes.First();
-			
-
-
-			foreach(var edge in bridgesDFS(node.Key)){
-                yield return edge;
+            bridges = new List<Edge>();
+            countDFS = 0;
+            in1 = new Dictionary<int, int?>();
+            low = new Dictionary<int, int?>();
+            foreach(var n in Nodes){
+                in1[n.Key] = null;
             }
+            var node = Nodes.First();
+            bridgesDFS(node.Key, null);
+            return bridges;
         }
 
-        private IEnumerable<Edge> bridgesDFS(int nodeKey, int? nodeParent = null){          
+        private void bridgesDFS(int nodeKey, int? nodeParent = null){          
             countDFS++;
             in1[nodeKey] = countDFS;
             low[nodeKey] = int.MaxValue;
@@ -112,20 +103,63 @@ namespace GraphAlgorithms
                 if(in1[w] == null){
                     bridgesDFS(w, nodeKey);
                     if(low[w] >= in1[w]){
-                        yield return Edges.First().Value;
-                        yield return edge;
+                        if(!bridges.Contains(edge))
+                            bridges.Add(edge);
                     }
                     low[nodeKey] = Math.Min(low[w].Value,low[nodeKey].Value);
                 }
-                else if(w != nodeParent && in1[w] < in1[nodeKey]){
-                    low[nodeKey] = Math.Min(low[nodeKey].Value,in1[w].Value);
+                else if(nodeParent.HasValue && w != nodeParent.Value){ 
+					low[nodeKey] = Math.Min(low[nodeKey].Value,in1[w].Value);
                 }
             }
         }
 
         public IEnumerable<Node<Edge>> FindArticulations(){
-            return null;
+            articulations = new List<Node<Edge>>();
+            countDFS = 0;
+			in1 = new Dictionary<int, int?>();
+			low = new Dictionary<int, int?>();
+			foreach (var n in Nodes)
+			{
+				in1[n.Key] = null;
+			}
+			var node = Nodes.First();
+            articulationsDFS(node.Key, null);
+            return articulations;        
         }
+
+		private void articulationsDFS(int nodeKey, int? nodeParent = null)
+		{
+			countDFS++;
+			in1[nodeKey] = countDFS;
+			low[nodeKey] = int.MaxValue;
+			foreach (var edge in Nodes[nodeKey].IncidentEdges.Values)
+			{
+				var w = edge.GetNeighbourKey(nodeKey);
+				if (in1[w] == null)
+				{
+                    articulationsDFS(w, nodeKey);
+                    if(!nodeParent.HasValue && Nodes[nodeKey].IncidentEdges.Count > 1){
+                        if (!articulations.Contains(Nodes[nodeKey]))
+                        {
+                            articulations.Add(Nodes[nodeKey]);
+                        }
+                    }
+                    else if (nodeParent.HasValue && low[w] >= in1[nodeKey])
+					{
+                        if (!articulations.Contains(Nodes[nodeKey]))
+                        {
+                            articulations.Add(Nodes[nodeKey]);
+                        }
+					}
+					low[nodeKey] = Math.Min(low[w].Value, low[nodeKey].Value);
+				}
+                else if (nodeParent.HasValue && w != nodeParent.Value)
+				{
+					low[nodeKey] = Math.Min(low[nodeKey].Value, in1[w].Value);
+				}
+			}
+		}
 
         /// <summary>
         /// Finds the connected components.
@@ -143,19 +177,22 @@ namespace GraphAlgorithms
                 if (visited[node.Key])
                     continue;
                 nodeKeys.Enqueue(node.Key);
-                visited[node.Key] = true;
                 //BFS, which finds all reachable nodes
                 while(nodeKeys.Count > 0){ 
                     var nodeKey = nodeKeys.Dequeue();
-                    foreach(var nodeNeighbourEdge in Nodes[nodeKey].IncidentEdges.Values){
+					visited[nodeKey] = true;
+                    graph.AddNode(Nodes[nodeKey]);
+					foreach(var nodeNeighbourEdge in Nodes[nodeKey].IncidentEdges.Values){
                         graph.AddEdge(nodeNeighbourEdge);
-                        if(!visited[nodeNeighbourEdge.GetNeighbourKey(nodeKey)])
+                        if (!visited[nodeNeighbourEdge.GetNeighbourKey(nodeKey)])
+                        {
                             nodeKeys.Enqueue(nodeNeighbourEdge.GetNeighbourKey(nodeKey));
-                        visited[nodeNeighbourEdge.GetNeighbourKey(nodeKey)] = true;
-
+                            visited[nodeNeighbourEdge.GetNeighbourKey(nodeKey)] = true; 
+                        }
 					}
                 }
                 yield return graph;
+                graph = new UnorientedGraph();
             }
 		}
 
@@ -171,31 +208,38 @@ namespace GraphAlgorithms
 				visited.Add(n.Key, false);
 			}			
             countDFS = 0;
-            IsConnectedDFS(Nodes.First().Key);
-            if (countDFS < Nodes.Count)
+            var nodeKeys = new Queue<int>();
+            nodeKeys.Enqueue(Nodes.First().Key);
+            while(nodeKeys.Count > 0){
+                var nodeKey = nodeKeys.Dequeue();
+                visited[nodeKey] = true;
+                countDFS++;
+                foreach(var nodeNeighbourEdge in Nodes[nodeKey].IncidentEdges.Values){
+                    if (!visited[nodeNeighbourEdge.GetNeighbourKey(nodeKey)]){
+                        nodeKeys.Enqueue(nodeNeighbourEdge.GetNeighbourKey(nodeKey));
+						visited[nodeNeighbourEdge.GetNeighbourKey(nodeKey)] = true;
+					} 
+                }
+            }
+            if (countDFS != Nodes.Count)
                 return false;
             return true;
 		}
 
-		private void IsConnectedDFS(int nodeKey)
-		{
-			if (visited[nodeKey])
-				return;
-			visited[nodeKey] = true;
-			countDFS++;
-			foreach (var neighbour in Nodes[nodeKey].IncidentEdges.Values)
-			{
-                IsConnectedDFS(neighbour.End.Key);
-			}
-		}
 
 		protected void FindShortestPathInMatrix(ref int?[,] matrixOfEdges)
 		{
+            if(matrixOfEdges.Length != Nodes.Count)
+                return;
+			for (int l = 0; l < Nodes.Count; l++)
+			{
+				matrixOfEdges[l, l] = 0;
+			}
 			for (int k = 0; k < Nodes.Count; k++)
 			{
-				for (int i = 1; i < Nodes.Count + 1; i++)
+				for (int i = 0; i < Nodes.Count; i++)
 				{
-					for (int j = 1; j < Nodes.Count + 1; j++)
+					for (int j = 0; j < Nodes.Count; j++)
 					{
 						var a = matrixOfEdges[i, j] ?? int.MaxValue;
 						var b = matrixOfEdges[i, k + 1] ?? int.MaxValue;
@@ -210,10 +254,7 @@ namespace GraphAlgorithms
 		protected int?[,] FindShortestPathInMatrix()
 		{
 			var matrix = new int?[Nodes.Count, Nodes.Count];
-			foreach (var edge in Edges.Values)
-			{
-				//TODO dodelat
-			}
+
 			FindShortestPathInMatrix(ref matrix);
 			return matrix;
 		}

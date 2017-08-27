@@ -6,6 +6,8 @@ namespace GraphAlgorithms
     public class OrientedGraph : Graph<OrientedEdge>
     {
         private List<Node<OrientedEdge>> topologicalOrder;
+        private List<OrientedGraph> graphs;
+        private Stack<int> dfsStack;
         public OrientedGraph() : base()
         {
         }
@@ -95,8 +97,60 @@ namespace GraphAlgorithms
             }
             return result;
         } 
+
         public List<OrientedGraph> FindStronglyConnectedComponents(){
-            return null;
+            in1 = new Dictionary<int, int?>(Nodes.Count);
+            low = new Dictionary<int, int?>(Nodes.Count);
+            visited = new Dictionary<int, bool>(Nodes.Count); 
+            graphs = new List<OrientedGraph>();
+            foreach(var node in Nodes){
+                in1[node.Key] = null;
+                low[node.Key] = null;
+                visited[node.Key] = false;
+            }
+            countDFS = 0;
+            dfsStack = new Stack<int>();
+            foreach(var node in Nodes){
+                if(in1[node.Key] == null){
+                    dfsSCC(node.Key);
+                }
+            }
+            return graphs;
+        }
+        private void dfsSCC(int nodeKey){
+            in1[nodeKey] = countDFS++;
+            dfsStack.Push(nodeKey);
+            low[nodeKey] = int.MaxValue;
+            foreach(var neighbourEdge in Nodes[nodeKey].IncidentEdges.Values){
+                var neighbourKey = neighbourEdge.End.Key;
+                if(!in1[neighbourKey].HasValue){
+                    dfsSCC(neighbourKey);
+                    low[nodeKey] = Math.Min((int)low[nodeKey], (int)low[neighbourKey]);
+                }
+                else{
+                    if(!visited[neighbourKey]){
+                        low[nodeKey] = Math.Min((int)low[nodeKey], (int)in1[neighbourKey]);
+                    }
+                }
+            }
+            if(low[nodeKey] >= in1[nodeKey]){
+                graphs.Add(new OrientedGraph());
+                while(true)
+                {
+                    var nK = dfsStack.Pop();
+                    graphs.Last().AddNode(new Node<OrientedEdge>(Nodes[nK]));
+                    if (nK == nodeKey)
+                        break;
+                } 
+                //Adding edges of the component
+                foreach(var node in graphs.Last().Nodes){
+                    foreach(var edge in Nodes[node.Key].IncidentEdges.Values){
+                        if(graphs.Last().Nodes.ContainsKey(edge.End.Key)){
+                            graphs.Last().AddEdge(edge);
+                        }
+                    }
+                }
+            }
         }
 
         public bool IsDAG(){
@@ -108,23 +162,30 @@ namespace GraphAlgorithms
             return DagDfs(rootNode.Key);
         }
 
-        //TODO tohle jsou slabe spojene komponenty, predelat na to!
+        /// <summary>
+        /// Finds the weakly connected components.
+        /// </summary>
+        /// <returns>The collection on UnorientedGraph objects representing the components.</returns>
         public IEnumerable<UnorientedGraph> FindWeaklyConnectedComponents(){
             visited = new Dictionary<int, bool>(Nodes.Count);
+			var temporaryGraph = new UnorientedGraph();
+
 			foreach (var node in Nodes)
 			{
 				visited.Add(node.Key, false);
+                temporaryGraph.AddNode(new Node<Edge>(node.Key,node.Value));
 			}
             var components = new List<OrientedGraph>();
 			var nodeKeys = new Queue<int>();
-            var temporaryGraph = new UnorientedGraph();
             foreach(var edge in Edges.Values){
                 var e = new Edge(edge);
                 if(!temporaryGraph.Edges.ContainsKey(e))
                     temporaryGraph.AddEdge(e);
             }
 
-            return temporaryGraph.FindConnectedComponents();
+            foreach(var component in temporaryGraph.FindConnectedComponents()){
+                yield return component;
+            }
 			
         }
        

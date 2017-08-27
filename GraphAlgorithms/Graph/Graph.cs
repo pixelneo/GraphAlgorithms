@@ -13,6 +13,8 @@ namespace GraphAlgorithms
 		protected Dictionary<int, int?> low;
 		protected Dictionary<int, int?> in1;
 		protected Dictionary<int, int> out1;
+        protected List<E> bridges;
+        protected List<Node<E>> articulations;
 		protected int countDFS; // helper field for counting edges in DFS
 
 
