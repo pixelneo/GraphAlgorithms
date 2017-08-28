@@ -20,6 +20,11 @@ namespace GraphAlgorithms
         protected int countDFS;
         /* END */
 
+        protected int NumberOfNegativeEdges{
+        	get;
+        	private set;
+
+        }
 
         /// <summary>
         /// Dictionary of Nodes list by their keys
@@ -42,6 +47,7 @@ namespace GraphAlgorithms
             Edges = new Dictionary<E, E>();
             visited = new HashSet<int>();
             visitedNow = new HashSet<int>();
+            NumberOfNegativeEdges = 0;
         }
 
         public virtual bool AddNode(Node<E> node) {
@@ -56,6 +62,9 @@ namespace GraphAlgorithms
                 AddNode(edge.Start);
                 AddNode(edge.End);
                 Edges.Add(edge, edge);
+                if(edge.Weight < 0){
+                	NumberOfNegativeEdges++;
+                }
                 return true;
             }
             return false;
@@ -63,21 +72,45 @@ namespace GraphAlgorithms
 
         //TODO smazat i referenci v IndidentEdges
         public virtual bool DeleteEdge(E edge) {
+        	if(edge.Weight < 0){
+                	NumberOfNegativeEdges--;
+                }
             return Edges.Remove(edge);
         }
 
-
-        /// <summary>
-        /// Finds the shortest path between two nodes.
+		/// <summary>
+        /// Finds distance between two nodes and list of predecessors on the path. Chooses optimal algorithm (dijkstra for non-negative edges, bellman ford otherwise).
         /// </summary>
-        /// <returns>Tuple of distance and dictionary of predecessors</returns>
-        /// <param name="start">Start node</param>
-        /// <param name="to">End node</param>
-        protected Tuple<int, Dictionary<int, int?>> FindDistanceOfShortestPathAndPredecessors(Node<E> start, Node<E> to) {
+        /// <param name="start">From this node</param>
+        /// <param name="end">To this node</param>
+        /// <returns>Tuple of distance and path, if there is a path, null otherwise</returns>
+        protected Tuple<int, Dictionary<int, int?>> FindDistanceOfShortestPathAndPredecessors(Node<E> start, Node<E> end){
+        	var predecessor = new Dictionary<int,int?>();
+        	int? distance;
+        	if(NumberOfNegativeEdges >= 0){
+        		distance =  Dijkstra(start, end, ref predecessor);
+        	}
+        	else{
+        		distance = BellmanFord(start, end, ref predecessor);
+        	}
+        	if(distance == null)
+        		return null;
+        	return new Tuple<int, Dictionary<int,int?>>(distance,predecessor);
+        }
+        
+    
+        /// <summary>
+        /// Finds distance between two nodes and list of predecessors on the path. Works on graph with non-negative edges.
+        /// </summary>
+        /// <param name="start">From this node</param>
+        /// <param name="end">To this node</param>
+        /// <param name="predecessor">Dictionary of predecessors, predecessor[k] is the predecessor of k</param>
+        /// <returns>Distance, if there is a path, null otherwise</returns>
+        private int? Dijkstra(Node<E> start, Node<E> end, ref Dictionary<int,int?> predecessor ) {
             //TODO: minimova halda 
             var distance = new Dictionary<int, int>();
             var status = new Dictionary<int, Status>();
-            var predecessor = new Dictionary<int, int?>();
+            //var predecessor = new Dictionary<int, int?>();
 
 
             //Dijskstra algorithm
@@ -113,17 +146,61 @@ namespace GraphAlgorithms
 
                 status[current.Key] = Status.Closed;
                 otevrene--;
-                if (current.Key == to.Key)
+                if (current.Key == end.Key)
                     break;
                 newOpen = false;
 
             }
-            if (distance[to.Key] != int.MaxValue)
-                return new Tuple<int, Dictionary<int, int?>>((int)distance[to.Key], predecessor);
+            if (distance[end.Key] != int.MaxValue)
+            	return distance[end.Key];
             return null;
-
         }
-
+		
+        /// <summary>
+        /// Finds distance between two nodes and list of predecessors on the path. Works on graph with positive and negative edges.
+        /// </summary>
+        /// <param name="start">From this node</param>
+        /// <param name="end">To this node</param>
+        /// <param name="predecessor">Dictionary of predecessors, predecessor[k] is the predecessor of k</param>
+        /// <returns>Distance, if there is a path, null otherwise</returns>
+        protected int? BellmanFord(Node<E> start, Node<E> end, ref Dictionary<int,int?> predecessor){
+        	 var distance = new Dictionary<int, int>();
+        	 foreach(var nodeKey in Nodes.Keys){
+        	 	distance[nodeKey] = int.MaxValue;
+        	 }
+        	 distance[start] = 0;
+        	 
+        	 int startKey, endKey, weight;
+        	 bool changed;
+        	 
+        	 for(int i = 1; i < Nodes.Count; i++){
+        	 	changed = false;
+        	 	foreach(var edge in Edges.Values){
+        	 		startKey = edge.Start.Key;
+        	 		endKey = edge.End.Key;
+        	 		weight = edge.Weight;
+        	 		if(distance[startKey] != int.MaxValue && distance[startKey] + weight < distance[endKey]){
+        	 			distance[endKey] = distance[startKey] + weight;
+        	 			predecessor[endKey] = startKey;
+        	 			changed = true;
+        	 		}
+        	 	}
+        	 	if(!changed)
+        	 		break;
+        	 }
+        	 
+        	 if(changed){
+	        	 foreach(var edge in Edges.Values){
+	        	 	startKey = edge.Start.Key;
+	        	 	endKey = edge.End.Key;
+	        	 	weight = edge.Weight;
+	        	 	if(distance[startKey] != int.MaxValue && distance[startKey] + weight < distance[endKey]){
+	        	 		return null; //negative cycle
+	        	 	}
+	        	 }
+        	 }
+        	 return distance[end.Key];
+        }
 
         protected bool FindAMinimalSpanningTreeShrub(ref Graph<E> graph) {
             //Kruskal algorthm
