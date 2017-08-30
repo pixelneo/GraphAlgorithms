@@ -35,7 +35,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MinHeap.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Node.cs" />
@@ -45,6 +44,7 @@
     <Compile Include="Edges\Edge.cs" />
     <Compile Include="Edges\IEdge.cs" />
     <Compile Include="Edges\OrientedEdge.cs" />
+    <Compile Include="MinHeap.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Graph\" />
