@@ -25,6 +25,20 @@ namespace GraphAlgorithms
         }
 
         /// <summary>
+        /// Removes Edge
+        /// </summary>
+        /// <param name="edge">Edge to remove.</param>
+        /// <returns>True, if successful, false otherwise.</returns>
+        public override bool DeleteEdge(Edge edge) {
+            if (base.DeleteEdge(edge)) {
+                Nodes[edge.Start.Key].DeleteIncidentEdge(edge);
+                Nodes[edge.End.Key].DeleteIncidentEdge(edge);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Finds the shortest path between two nodes
         /// </summary>
         /// <returns>Null if path does not exist, Tuple of the path and distance.</returns>
@@ -218,30 +232,90 @@ namespace GraphAlgorithms
         }
 
 
-        protected void FindShortestPathInMatrix(ref int?[,] matrixOfEdges) {
-            if (matrixOfEdges.Length != Nodes.Count)
-                return;
-            for (int l = 0; l < Nodes.Count; l++) {
-                matrixOfEdges[l, l] = 0;
-            }
-            for (int k = 0; k < Nodes.Count; k++) {
-                for (int i = 0; i < Nodes.Count; i++) {
-                    for (int j = 0; j < Nodes.Count; j++) {
-                        var a = matrixOfEdges[i, j] ?? int.MaxValue;
-                        var b = matrixOfEdges[i, k + 1] ?? int.MaxValue;
-                        var c = matrixOfEdges[k + 1, j] ?? int.MaxValue;
-                        matrixOfEdges[i, j] = Math.Min(a, b + c);
-                    }
-                }
-            }
-        }
 
+        /// <summary>
+        /// Finds distance shortest path between all nodes using Floyd Warshall algorithm.
+        /// </summary>
+        /// <returns>"2D" Dictionary representing matrix of distances</returns>
+        public Dictionary<int, Dictionary<int, int?>> FindShortestPathInMatrix() {
+            var matrix2 = new Dictionary<int, Dictionary<int, int?>>();
+            var keys = new Dictionary<int, int>();
+            var indices = new Dictionary<int, int>();
 
-        protected int?[,] FindShortestPathInMatrix() {
+            int i = 0, j = 0;
             var matrix = new int?[Nodes.Count, Nodes.Count];
 
-            FindShortestPathInMatrix(ref matrix);
-            return matrix;
+            //mapping Nodes keys to ints, starting from 0
+            foreach (int nodeKey in Nodes.Keys) {
+                keys.Add(i, nodeKey);
+                indices.Add(nodeKey, i);
+                j = 0;
+                foreach (int nodeKey2 in Nodes.Keys) {
+                    matrix[i, j++] = null;
+                }
+                i++;
+            }
+
+            //creating matrix of edges
+            foreach (var edge in Edges.Values) {
+                matrix[indices[edge.Start.Key], indices[edge.End.Key]] = edge.Weight;
+                matrix[indices[edge.End.Key], indices[edge.Start.Key]] = edge.Weight;
+            }
+            base.FindShortestPathInMatrix(ref matrix);
+
+            //mapping temporary indices to Node keys
+            for (int k = 0; k < Nodes.Count; k++) {
+                for (int l = 0; l < Nodes.Count; l++) {
+                    matrix2.Add(keys[k], new Dictionary<int, int?>());
+                    matrix2[keys[k]].Add(keys[l], matrix[k, l]);
+                    // matrix2[keys[l]][keys[k]] = matrix[l, k];
+                }
+            }
+
+            return matrix2;
+        }
+
+        /// <summary>
+        /// Checks whether the graph is bipartite and if so, returns the two parts.
+        /// </summary>
+        /// <returns>Null, if graph is not bipartite. Parts is it is bipartite.</returns>
+        public Tuple<List<Node<Edge>>, List<Node<Edge>>> IsBipartite() {
+            var color = new Dictionary<int, bool?>();
+            var queue = new Queue<int>();
+            visited.Clear();
+            Tuple<List<Node<Edge>>, List<Node<Edge>>> result = new Tuple<List<Node<Edge>>, List<Node<Edge>>>(new List<Node<Edge>>(), new List<Node<Edge>>());
+
+            foreach (var nodeKey in Nodes.Keys) {
+                color[nodeKey] = null;
+            }
+
+            queue.Enqueue(Nodes.First().Key);
+            color[Nodes.First().Key] = true;
+            int item, neighbour;
+            bool nowColor = true;
+            while (queue.Count > 0) {
+                item = queue.Dequeue();
+                foreach (var edge in Nodes[item].IncidentEdges.Values) {
+                    neighbour = edge.GetNeighbourKey(item);
+                    if (color[neighbour].HasValue && (bool)color[neighbour] == nowColor) {
+                        return null;
+                    }
+                    if (visited.Contains(neighbour)) {
+                        queue.Enqueue(neighbour);
+                        color[neighbour] = !nowColor;
+                    }
+
+                }
+                visited.Add(item);
+                if (nowColor) {
+                    result.Item1.Add(Nodes[item]);
+                }
+                else {
+                    result.Item2.Add(Nodes[item]);
+                }
+                nowColor = !nowColor;
+            }
+            return result;
         }
 
     }

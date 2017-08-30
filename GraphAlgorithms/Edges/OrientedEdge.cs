@@ -3,15 +3,9 @@ namespace GraphAlgorithms
 {
     public class OrientedEdge : IEdge<OrientedEdge>, IEquatable<OrientedEdge>
     {
-        private int weight;
         public Node<OrientedEdge> Start { get; set; }
         public Node<OrientedEdge> End { get; set; }
-        public int Weight {
-            get { return weight; }
-            set {
-            	weight = value;
-            }
-        }
+        public int Weight { get; set; }
 
         public OrientedEdge(Node<OrientedEdge> start, Node<OrientedEdge> end, int weight) {
             Start = start;

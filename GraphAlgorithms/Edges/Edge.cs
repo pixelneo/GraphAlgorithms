@@ -3,17 +3,9 @@ namespace GraphAlgorithms
 {
     public class Edge : IEquatable<Edge>, IEdge<Edge>
     {
-        private int weight;
         public Node<Edge> Start { get; set; }
         public Node<Edge> End { get; set; }
-        public int Weight {
-            get {
-                return weight;
-            }
-            set {
-        		weight = value;
-            }
-        }
+        public int Weight { get; set; }
 
         /// <summary>
         /// Gets the opposite node on the edge to the one provided.

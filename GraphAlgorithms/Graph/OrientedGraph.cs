@@ -39,6 +39,20 @@ namespace GraphAlgorithms
             }
             return false;
         }
+        
+        /// <summary>
+        /// Removes edge
+        /// </summary>
+        /// <param name="edge">Edge to remove.</param>
+        /// <returns>True, if succesful, false otherwise</returns>
+        public override bool DeleteEdge(OrientedEdge edge)
+		{
+			if(base.DeleteEdge(edge)){
+				Nodes[edge.Start.Key].DeleteIncidentEdge(edge);
+				return true;
+			}
+        	return false;
+        }
 
         /// <summary>
         /// Finds the shortest path between two nodes
@@ -227,6 +241,7 @@ namespace GraphAlgorithms
             }
 
         }
+        
 
         private bool DagDfs(int nodeKey) {
             if (visitedNow.Contains(nodeKey))
@@ -239,6 +254,47 @@ namespace GraphAlgorithms
             }
             visitedNow.Remove(nodeKey);
             return true;
+        }
+        
+        /// <summary>
+		/// Finds distance shortest path between all nodes using Floyd Warshall algorithm.
+		/// </summary>
+		/// <returns>"2D" Dictionary representing matrix of distances</returns>
+        public Dictionary<int, Dictionary<int, int?>> FindShortestPathInMatrix() {
+            var matrix2 = new Dictionary<int, Dictionary<int, int?>>();
+            var keys = new Dictionary<int, int>();
+            var indices = new Dictionary<int, int>();
+
+            int i = 0, j = 0;
+            var matrix = new int?[Nodes.Count, Nodes.Count];
+            
+            //mapping Nodes keys to ints, starting from 0
+            foreach (int nodeKey in Nodes.Keys) {
+                keys.Add(i, nodeKey);
+                indices.Add(nodeKey, i);
+                j = 0;
+                foreach (int nodeKey2 in Nodes.Keys) {
+                    matrix[i, j++] = null;
+                }
+                i++;
+            }
+            
+            //creating matrix of edges
+            foreach (var edge in Edges.Values) {
+                matrix[indices[edge.Start.Key], indices[edge.End.Key]] = edge.Weight;
+            }
+            base.FindShortestPathInMatrix(ref matrix);
+			
+            //mapping temporary indices to Node keys
+            for (int k = 0; k < Nodes.Count; k++) {
+                for (int l = 0; l < Nodes.Count; l++) {
+            		matrix2.Add(keys[k], new Dictionary<int, int?>());
+            		matrix2[keys[k]].Add(keys[l],matrix[k,l]);
+                   // matrix2[keys[l]][keys[k]] = matrix[l, k];
+                }
+            }
+
+            return matrix2;
         }
 
     }
