@@ -23,10 +23,10 @@ namespace GraphAlgorithms
             End = end;
             Weight = weight;
         }
-        public Edge(OrientedEdge orientedEdge) {
-            Start = new Node<Edge>(orientedEdge.Start.Key, orientedEdge.Start.Value);
-            End = new Node<Edge>(orientedEdge.End.Key, orientedEdge.End.Value);
-            Weight = orientedEdge.Weight;
+        public Edge(DirectedEdge DirectedEdge) {
+            Start = new Node<Edge>(DirectedEdge.Start.Key, DirectedEdge.Start.Value);
+            End = new Node<Edge>(DirectedEdge.End.Key, DirectedEdge.End.Value);
+            Weight = DirectedEdge.Weight;
         }
 
         public Edge(Edge e) {

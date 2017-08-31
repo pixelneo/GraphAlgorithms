@@ -39,11 +39,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Node.cs" />
     <Compile Include="Graph\Graph.cs" />
-    <Compile Include="Graph\OrientedGraph.cs" />
-    <Compile Include="Graph\UnorientedGraph.cs" />
+    <Compile Include="Graph\DirectedGraph.cs" />
+    <Compile Include="Graph\UndirectedGraph.cs" />
     <Compile Include="Edges\Edge.cs" />
     <Compile Include="Edges\IEdge.cs" />
-    <Compile Include="Edges\OrientedEdge.cs" />
+    <Compile Include="Edges\DirectedEdge.cs" />
     <Compile Include="MinHeap.cs" />
   </ItemGroup>
   <ItemGroup>

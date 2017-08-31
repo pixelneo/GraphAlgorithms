@@ -26,7 +26,7 @@ namespace DataStructures
         public int Insert(int value, int key) {
             elements.Add(new Tuple<int, int>(value, key));
             indexInHeap.Add(key, elements.Count);
-            int i = elements.Count;
+            int i = elements.Count - 1;
             while (i != 0 && elements[parent(i)].Item1 > elements[i].Item1) {
                 var temp = elements[i];
                 elements[i] = elements[parent(i)];
@@ -48,7 +48,7 @@ namespace DataStructures
             if (elements.Count == 1) {
                 root = elements[0];
                 elements.RemoveAt(elements.Count - 1);
-                indexInHeap.Remove(elements[0].Item2);
+                indexInHeap.Remove(root.Item2);
                 return root;
             }
 
@@ -102,7 +102,7 @@ namespace DataStructures
         }
 
         private int parent(int index) {
-            return (index - 1) / 2;
+            return (index - 1) / 2 < 0 ? 0 : (index - 1) / 2;
         }
 
         private int leftChild(int index) {

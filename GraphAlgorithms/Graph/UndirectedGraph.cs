@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 namespace GraphAlgorithms
 {
-    public class UnorientedGraph : Graph<Edge>
+    public class UndirectedGraph : Graph<Edge>
     {
-        private int countBridges; //helper field
-        public UnorientedGraph() : base() {
+        public UndirectedGraph() : base() {
         }
 
         /// <summary>
@@ -38,20 +37,27 @@ namespace GraphAlgorithms
             return false;
         }
 
+
+
         /// <summary>
         /// Finds the shortest path between two nodes
         /// </summary>
         /// <returns>Null if path does not exist, Tuple of the path and distance.</returns>
         /// <param name="Start">Start node</param>
         /// <param name="End">End node</param>
-        public Tuple<UnorientedGraph, int> FindShortestPath(Node<Edge> Start, Node<Edge> End) {
-            var result = base.FindDistanceOfShortestPathAndPredecessors(Start, End);
-            if (result == null)
+        public Tuple<UndirectedGraph, int> FindShortestPath(Node<Edge> Start, Node<Edge> End) {
+            var predecessor = new Dictionary<int, int?>();
+            int? distance;
+            if (NumberOfNegativeEdges <= 0) {
+                distance = base.Dijkstra(Start, End, ref predecessor);
+            }
+            else {
+                throw new NotImplementedException("Graph contains negative edges.");
+            }
+            if (distance == null)
                 return null;
-            var distance = result.Item1;
-            var predecessor = result.Item2;
 
-            UnorientedGraph graph = new UnorientedGraph();
+            UndirectedGraph graph = new UndirectedGraph();
             Node<Edge> previous = new Node<Edge>(End.Key, End.Value);
             var current = End;
             while (!current.Equals(Start) && predecessor[previous.Key].HasValue) {
@@ -61,7 +67,7 @@ namespace GraphAlgorithms
                 graph.AddEdge(Edges[edge]);
                 previous = current;
             }
-            return new Tuple<UnorientedGraph, int>(graph, distance);
+            return new Tuple<UndirectedGraph, int>(graph, (int)distance);
 
         }
 
@@ -69,7 +75,7 @@ namespace GraphAlgorithms
         /// Finds the minimal spanning tree.
         /// </summary>
         /// <returns>MST, if the graph is connected. Null otherwise</returns>
-        public UnorientedGraph FindMST() {
+        public UndirectedGraph FindMST() {
             edges = Edges.Keys.ToList().OrderBy(edge => edge.Weight).ToList();
             shrub = new Dictionary<int, int?>(Nodes.Count);
             heightOfShrub = new Dictionary<int, int>(Nodes.Count);
@@ -79,7 +85,7 @@ namespace GraphAlgorithms
                 heightOfShrub.Add(node.Key, 0);
             }
 
-            UnorientedGraph graph = new UnorientedGraph();
+            UndirectedGraph graph = new UndirectedGraph();
 
             int edgeCount = 0;
             foreach (var edge in edges) {
@@ -99,6 +105,8 @@ namespace GraphAlgorithms
         /// </summary>
         /// <returns>Collection of bridges.</returns>
         public IEnumerable<Edge> FindBridges() {
+            if (Nodes.Count == 0)
+                return null;
             bridges = new List<Edge>();
             countDFS = 0;
             in1 = new Dictionary<int, int?>();
@@ -136,6 +144,8 @@ namespace GraphAlgorithms
         /// </summary>
         /// <returns>Collection of articulations</returns>
         public IEnumerable<Node<Edge>> FindArticulations() {
+            if (Nodes.Count == 0)
+                return null;
             articulations = new List<Node<Edge>>();
             countDFS = 0;
             in1 = new Dictionary<int, int?>();
@@ -177,11 +187,11 @@ namespace GraphAlgorithms
         /// <summary>
         /// Finds the connected components.
         /// </summary>
-        /// <returns>Collection of instances of UnorientedGraph repsesenting list of connected components.</returns>
-        public IEnumerable<UnorientedGraph> FindConnectedComponents() {
+        /// <returns>Collection of instances of UndirectedGraph repsesenting list of connected components.</returns>
+        public IEnumerable<UndirectedGraph> FindConnectedComponents() {
 
             var nodeKeys = new Queue<int>();
-            var graph = new UnorientedGraph();
+            var graph = new UndirectedGraph();
             foreach (var node in Nodes.Values) {
                 if (visited.Contains(node.Key))
                     continue;
@@ -201,7 +211,7 @@ namespace GraphAlgorithms
                     }
                 }
                 yield return graph;
-                graph = new UnorientedGraph();
+                graph = new UndirectedGraph();
             }
         }
 
@@ -210,6 +220,8 @@ namespace GraphAlgorithms
         /// </summary>
         /// <returns><c>true</c>, if connected is connected, <c>false</c> otherwise.</returns>
 		public bool IsConnected() {
+            if (Nodes.Count == 0)
+                return false;
             countDFS = 0;
             var nodeKeys = new Queue<int>();
             nodeKeys.Enqueue(Nodes.First().Key);
@@ -243,7 +255,7 @@ namespace GraphAlgorithms
             var indices = new Dictionary<int, int>();
 
             int i = 0, j = 0;
-            var matrix = new int?[Nodes.Count, Nodes.Count];
+            var matrix = new int[Nodes.Count, Nodes.Count];
 
             //mapping Nodes keys to ints, starting from 0
             foreach (int nodeKey in Nodes.Keys) {
@@ -251,7 +263,7 @@ namespace GraphAlgorithms
                 indices.Add(nodeKey, i);
                 j = 0;
                 foreach (int nodeKey2 in Nodes.Keys) {
-                    matrix[i, j++] = null;
+                    matrix[i, j++] = int.MaxValue;
                 }
                 i++;
             }
@@ -265,8 +277,8 @@ namespace GraphAlgorithms
 
             //mapping temporary indices to Node keys
             for (int k = 0; k < Nodes.Count; k++) {
+                matrix2.Add(keys[k], new Dictionary<int, int?>());
                 for (int l = 0; l < Nodes.Count; l++) {
-                    matrix2.Add(keys[k], new Dictionary<int, int?>());
                     matrix2[keys[k]].Add(keys[l], matrix[k, l]);
                     // matrix2[keys[l]][keys[k]] = matrix[l, k];
                 }
@@ -280,6 +292,8 @@ namespace GraphAlgorithms
         /// </summary>
         /// <returns>Null, if graph is not bipartite. Parts is it is bipartite.</returns>
         public Tuple<List<Node<Edge>>, List<Node<Edge>>> IsBipartite() {
+            if (Nodes.Count == 0)
+                return null;
             var color = new Dictionary<int, bool?>();
             var queue = new Queue<int>();
             visited.Clear();
@@ -295,16 +309,16 @@ namespace GraphAlgorithms
             bool nowColor = true;
             while (queue.Count > 0) {
                 item = queue.Dequeue();
+                nowColor = (bool)color[item];
                 foreach (var edge in Nodes[item].IncidentEdges.Values) {
                     neighbour = edge.GetNeighbourKey(item);
                     if (color[neighbour].HasValue && (bool)color[neighbour] == nowColor) {
                         return null;
                     }
-                    if (visited.Contains(neighbour)) {
+                    if (!visited.Contains(neighbour)) {
                         queue.Enqueue(neighbour);
                         color[neighbour] = !nowColor;
                     }
-
                 }
                 visited.Add(item);
                 if (nowColor) {
@@ -313,10 +327,10 @@ namespace GraphAlgorithms
                 else {
                     result.Item2.Add(Nodes[item]);
                 }
-                nowColor = !nowColor;
             }
             return result;
         }
+
 
     }
 }

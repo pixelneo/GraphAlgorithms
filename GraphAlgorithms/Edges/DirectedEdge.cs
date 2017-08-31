@@ -1,25 +1,25 @@
 using System;
 namespace GraphAlgorithms
 {
-    public class OrientedEdge : IEdge<OrientedEdge>, IEquatable<OrientedEdge>
+    public class DirectedEdge : IEdge<DirectedEdge>, IEquatable<DirectedEdge>
     {
-        public Node<OrientedEdge> Start { get; set; }
-        public Node<OrientedEdge> End { get; set; }
+        public Node<DirectedEdge> Start { get; set; }
+        public Node<DirectedEdge> End { get; set; }
         public int Weight { get; set; }
 
-        public OrientedEdge(Node<OrientedEdge> start, Node<OrientedEdge> end, int weight) {
+        public DirectedEdge(Node<DirectedEdge> start, Node<DirectedEdge> end, int weight) {
             Start = start;
             End = end;
             Weight = weight;
         }
 
-        public OrientedEdge(OrientedEdge orientedEdge) {
-            Start = new Node<OrientedEdge>(orientedEdge.Start.Key, orientedEdge.Start.Value);
-            End = new Node<OrientedEdge>(orientedEdge.End.Key, orientedEdge.End.Value);
-            Weight = orientedEdge.Weight;
+        public DirectedEdge(DirectedEdge DirectedEdge) {
+            Start = new Node<DirectedEdge>(DirectedEdge.Start.Key, DirectedEdge.Start.Value);
+            End = new Node<DirectedEdge>(DirectedEdge.End.Key, DirectedEdge.End.Value);
+            Weight = DirectedEdge.Weight;
         }
 
-        public bool Equals(OrientedEdge other) {
+        public bool Equals(DirectedEdge other) {
             return (this.Start.Equals(other.Start) && this.End.Equals(other.End));
         }
 
@@ -32,7 +32,7 @@ namespace GraphAlgorithms
         /// </summary>
         /// <returns>End node</returns>
         /// <param name="me"></param>        
-        public Node<OrientedEdge> GetNeighbour(Node<OrientedEdge> me) {
+        public Node<DirectedEdge> GetNeighbour(Node<DirectedEdge> me) {
             return End;
         }
 
